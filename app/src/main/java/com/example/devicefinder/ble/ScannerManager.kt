@@ -45,9 +45,9 @@ class ScannerManager(private val context: Context) {
         @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             result?.let {
-                val deviceName = it.device.name ?: it.scanRecord?.deviceName
                 val mac = it.device.address
                 val rssi = it.rssi
+                val deviceName = resolveBleName(it)
 
                 val device = SeenDevice(
                     id = "BLE:$mac",
@@ -65,6 +65,46 @@ class ScannerManager(private val context: Context) {
             // Log failure or handle error
         }
     }
+
+    @SuppressLint("MissingPermission")
+    private fun resolveBleName(result: ScanResult): String {
+        val mac = result.device.address
+        // 1. Try Advertised Name (most accurate)
+        val advertisedName = result.scanRecord?.deviceName
+        if (!advertisedName.isNullOrBlank()) return advertisedName
+
+        // 2. Try Cached System Name
+        val systemName = result.device.name
+        if (!systemName.isNullOrBlank()) return systemName
+
+        // 3. Try Service UUIDs (Generic Identification)
+        val serviceUuids = result.scanRecord?.serviceUuids
+        if (!serviceUuids.isNullOrEmpty()) {
+            for (parcelUuid in serviceUuids) {
+                val uuidString = parcelUuid.uuid.toString().substring(4, 8).uppercase() // Short UUID
+                val genericName = when (uuidString) {
+                    "180D" -> "Heart Rate Monitor"
+                    "180F" -> "Battery Service"
+                    "1810" -> "Blood Pressure"
+                    "181A" -> "Environmental Sensor"
+                    "1800" -> "Generic Access" // Common, maybe skip
+                    "1801" -> "Generic Attribute"
+                    "FE9F", "FE50" -> "Google Fast Pair"
+                    "FD6F" -> "Exposure Notification" // COVID trackers
+                    "1812" -> "HID (Keyboard/Mouse)"
+                    "180A" -> "Device Information"
+                    "FEAA" -> "Eddystone Beacon"
+                    "1803" -> "Link Loss"
+                    "1802" -> "Find Me"
+                    else -> null
+                }
+                if (genericName != null) return genericName
+            }
+        }
+
+        // 4. Fallback
+        return "Unknown BLE ($mac)"
+    }
     
     // Wi-Fi Broadcast Receiver
     private val wifiScanReceiver = object : BroadcastReceiver() {
@@ -78,17 +118,17 @@ class ScannerManager(private val context: Context) {
                     val bssid = scanResult.BSSID
                     val level = scanResult.level
                     
-                    // Filter out empty SSIDs if desired, but for a "Radar" seeing everything is cool
-                    if (ssid.isNotBlank()) {
-                         val device = SeenDevice(
-                            id = "WIFI:$bssid",
-                            name = ssid,
-                            rssi = level,
-                            source = "WiFi",
-                            lastSeen = System.currentTimeMillis()
-                        )
-                        updateDevice(device)
-                    }
+                    // Show all networks, even hidden ones
+                    val displayName = if (ssid.isNotBlank()) ssid else "<Hidden Network> ($bssid)"
+                    
+                    val device = SeenDevice(
+                        id = "WIFI:$bssid",
+                        name = displayName,
+                        rssi = level,
+                        source = "WiFi",
+                        lastSeen = System.currentTimeMillis()
+                    )
+                    updateDevice(device)
                 }
             }
         }

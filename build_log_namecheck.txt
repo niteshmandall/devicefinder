@@ -1,0 +1,96 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+
+> Task :app:compileDebugKotlin FAILED
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:46:9 This annotation is not repeatable.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:101:31 Unresolved reference 'mac'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:104:9 'onScanFailed' overrides nothing.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:105:19 Unresolved reference 'onScanFailed'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:116:31 Unresolved reference 'wifiManager'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:117:36 Method 'iterator()' is ambiguous for this expression. Applicable candidates:
+fun <T> Enumeration<T>.iterator(): Iterator<T>
+fun <T> Iterator<T>.iterator(): Iterator<T>
+fun <K, V> Map<out K, V>.iterator(): Iterator<Map.Entry<K, V>>
+fun <K, V> MutableMap<K, V>.iterator(): MutableIterator<MutableMap.MutableEntry<K, V>>
+fun CharSequence.iterator(): CharIterator
+fun BufferedInputStream.iterator(): ByteIterator
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:142:17 Unresolved reference 'isScanning'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:145:21 Unresolved reference 'wifiManager'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:157:13 Unresolved reference 'isScanning'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:158:9 Unresolved reference 'isScanning'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:161:13 Unresolved reference 'bluetoothAdapter'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:161:41 Unresolved reference 'bluetoothAdapter'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:162:27 Unresolved reference 'bluetoothAdapter'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:166:48 Unresolved reference 'bleScanCallback'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:172:9 Unresolved reference 'context'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:180:14 Unresolved reference 'isScanning'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:181:9 Unresolved reference 'isScanning'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:184:13 Unresolved reference 'bluetoothAdapter'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:184:41 Unresolved reference 'bluetoothAdapter'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:185:13 Unresolved reference 'bluetoothAdapter'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:185:59 Unresolved reference 'bleScanCallback'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:190:13 Unresolved reference 'context'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:201:9 Unresolved reference '_seenDevices'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:210:24 Unresolved reference '_seenDevices'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:212:25 Unresolved reference 'hasNext'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:213:34 Unresolved reference 'next'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:214:44 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:215:26 None of the following candidates is applicable:
+fun <T> MutableCollection<out T>.remove(element: T): Boolean
+fun <T> MutableList<T>.remove(index: Int): T
+fun <K, V> MutableMap<out K, V>.remove(key: K): V?
+fun <K, V> MutableMap<out K, out V>.remove(key: K, value: V): Boolean
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:226:26 Unresolved reference '_seenDevices'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:226:65 Unresolved reference 'rssi'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:226:67 Unresolved reference 'it'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:227:9 Unresolved reference '_devicesFlow'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ble/ScannerManager.kt:242:1 Syntax error: Expecting a top level declaration.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 4s
+30 actionable tasks: 1 executed, 29 up-to-date
