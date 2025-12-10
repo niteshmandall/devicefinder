@@ -26,8 +26,9 @@ import kotlin.math.sin
  * @param devices List of devices to display.
  * @param maxDistanceMeters The distance represented by the edge of the radar.
  */
-@Composable
 
+
+@Composable
 fun RadarView(
     devices: List<SeenDevice>,
     maxDistanceMeters: Double = 20.0,
@@ -42,15 +43,9 @@ fun RadarView(
             context,
             context.getSharedPreferences("osmdroid", android.content.Context.MODE_PRIVATE)
         )
-        // Set User Agent to avoid being blocked
         Configuration.getInstance().userAgentValue = context.packageName
         true
     }
-
-    // Default "User Location" - In a real app, use FusedLocationProvider.
-    // For this demo, we pick a fixed point (e.g., London Eye) or valid coordinates.
-    // We'll use a state to allow updates if we ever added real GPS.
-    val userLocation by remember { mutableStateOf(GeoPoint(51.5033, -0.1195)) } 
 
     // MapView State
     val mapView = remember {
@@ -59,67 +54,85 @@ fun RadarView(
             setMultiTouchControls(true)
             zoomController.setVisibility(org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER)
             controller.setZoom(19.0)
-            controller.setCenter(userLocation)
+        }
+    }
+
+    // User Location Overlay
+    val locationOverlay = remember {
+        org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay(
+            org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider(context),
+            mapView
+        ).apply {
+            enableMyLocation()
+            enableFollowLocation()
+            isDrawAccuracyEnabled = true
+        }
+    }
+
+    // Initial setup
+    LaunchedEffect(Unit) {
+        if (!mapView.overlays.contains(locationOverlay)) {
+            mapView.overlays.add(locationOverlay)
         }
     }
 
     // Effect to update Markers when devices change
+    // We need to redraw markers relative to the CURRENT user location.
+    // If we don't have a fix yet, we might skip or use a default.
     LaunchedEffect(devices) {
-        mapView.overlays.clear()
+        // Keep the location overlay, clear others (Markers)
+        // We iterate and remove only Markers to preserve the MyLocation overlay
+        mapView.overlays.removeAll { it is Marker }
         
-        // Add User Marker (Center)
-        val userMarker = Marker(mapView)
-        userMarker.position = userLocation
-        userMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-        userMarker.title = "You are here"
-        // Use default icon or custom
-        mapView.overlays.add(userMarker)
+        val currentUserLoc = locationOverlay.myLocation
+        
+        if (currentUserLoc != null) {
+            // Ensure map is centered if following is enabled (it should be automatic, but good to ensure)
+            // if (locationOverlay.isFollowLocationEnabled) {
+            //    mapView.controller.animateTo(currentUserLoc)
+            // }
 
-        devices.forEach { device ->
-            // Simulate Geolocation
-            // We have distance and a consistent random angle.
-            // New Point = Origin + Distance * Angle
-            val angleDegrees = abs(device.id.hashCode() % 360).toDouble()
-            val angleRad = Math.toRadians(angleDegrees)
-            
-            val exponent = (-59 - device.rssi) / (10.0 * 2.7)
-            val distMeters = 10.0.pow(exponent)
-            
-            // Simple flat earth approx for small distances is fine
-            // 1 deg Lat ~= 111,111 meters
-            // 1 deg Lon ~= 111,111 * cos(lat) meters
-            val latOffset = (distMeters * cos(angleRad)) / 111111.0
-            val lonOffset = (distMeters * sin(angleRad)) / (111111.0 * cos(Math.toRadians(userLocation.latitude)))
-            
-            val devicePos = GeoPoint(userLocation.latitude + latOffset, userLocation.longitude + lonOffset)
-            
-            val marker = Marker(mapView)
-            marker.position = devicePos
-            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            marker.title = "${device.name ?: "Unknown"}\n(${device.id})"
-            marker.subDescription = "Signal: ${device.rssi} dBm"
-            
-            // On Click
-            marker.setOnMarkerClickListener { m, _ ->
-                m.showInfoWindow() // Show the title bubble
-                onDeviceSelected(device)
-                true
+            devices.forEach { device ->
+                // Simulate Geolocation relative to Real User Location
+                val angleDegrees = abs(device.id.hashCode() % 360).toDouble()
+                val angleRad = Math.toRadians(angleDegrees)
+                
+                val exponent = (-59 - device.rssi) / (10.0 * 2.7)
+                val distMeters = 10.0.pow(exponent)
+                
+                val latOffset = (distMeters * cos(angleRad)) / 111111.0
+                val lonOffset = (distMeters * sin(angleRad)) / (111111.0 * cos(Math.toRadians(currentUserLoc.latitude)))
+                
+                val devicePos = GeoPoint(currentUserLoc.latitude + latOffset, currentUserLoc.longitude + lonOffset)
+                
+                val marker = Marker(mapView)
+                marker.position = devicePos
+                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                marker.title = "${device.name ?: "Unknown"}\n(${device.id})"
+                marker.subDescription = "Signal: ${device.rssi} dBm"
+                
+                marker.setOnMarkerClickListener { m, _ ->
+                    m.showInfoWindow()
+                    onDeviceSelected(device)
+                    true
+                }
+                
+                mapView.overlays.add(marker)
             }
-            
-            mapView.overlays.add(marker)
         }
         
-        mapView.invalidate() // Redraw
+        mapView.invalidate()
     }
 
     AndroidView(
         factory = { mapView },
         modifier = modifier.fillMaxSize(),
         update = { 
-            // Optional: Update center if user moved
-            // it.controller.setCenter(userLocation)
+            // Optional updates
         }
     )
+    
+    DisposableMapView(mapView)
 }
 
 // Cleanup lifecycle
