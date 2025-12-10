@@ -1,41 +1,22 @@
 package com.example.devicefinder.ui
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import com.example.devicefinder.ble.SeenDevice
+import org.osmdroid.config.Configuration
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 import kotlin.math.abs
 import kotlin.math.cos
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
 
@@ -46,151 +27,109 @@ import kotlin.math.sin
  * @param maxDistanceMeters The distance represented by the edge of the radar.
  */
 @Composable
+
 fun RadarView(
     devices: List<SeenDevice>,
     maxDistanceMeters: Double = 20.0,
     onDeviceSelected: (SeenDevice) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "RadarSweep")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "RadarRotation"
-    )
-
-    // Gestures State
-    var scale by remember { mutableFloatStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
-    var size by remember { mutableStateOf(IntSize.Zero) }
+    val context = LocalContext.current
     
-    val state = rememberTransformableState { zoomChange, panChange, _ ->
-        scale = (scale * zoomChange).coerceIn(0.5f, 5f)
-        offset += panChange
+    // Initialize OSMDroid Config
+    remember {
+        Configuration.getInstance().load(
+            context,
+            context.getSharedPreferences("osmdroid", android.content.Context.MODE_PRIVATE)
+        )
+        // Set User Agent to avoid being blocked
+        Configuration.getInstance().userAgentValue = context.packageName
+        true
     }
 
-    val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-    val blipColor = MaterialTheme.colorScheme.primary
-    val wifiBlipColor = MaterialTheme.colorScheme.secondary
-    val sweepColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+    // Default "User Location" - In a real app, use FusedLocationProvider.
+    // For this demo, we pick a fixed point (e.g., London Eye) or valid coordinates.
+    // We'll use a state to allow updates if we ever added real GPS.
+    val userLocation by remember { mutableStateOf(GeoPoint(51.5033, -0.1195)) } 
 
-    Box(
-        modifier = modifier
-            .clip(RectangleShape) // Clip to bounds
-            .onSizeChanged { size = it }
-            .transformable(state = state)
-            .pointerInput(Unit) {
-                detectTapGestures { tapOffset ->
-                     if (size == IntSize.Zero) return@detectTapGestures
-                     
-                     val center = Offset(size.width / 2f, size.height / 2f)
-                     val radius = min(size.width, size.height) / 2f
-                     
-                     // Helper map to find clicked device
-                     val clickTolerance = 40f // px
-                     
-                     val clickedDevice = devices.find { device ->
-                        val angleDegrees = abs(device.id.hashCode() % 360).toFloat()
-                        val angleRad = Math.toRadians(angleDegrees.toDouble())
-                        
-                        val exponent = (-59 - device.rssi) / (10.0 * 2.7)
-                        val dist = 10.0.pow(exponent)
-                        val normalizedDist = (dist / maxDistanceMeters).coerceIn(0.0, 1.0).toFloat()
-                        val deviceRadius = radius * normalizedDist
-                        
-                        val internalX = deviceRadius * cos(angleRad).toFloat()
-                        val internalY = deviceRadius * sin(angleRad).toFloat()
-                        
-                        // Project internal point to screen space
-                        val screenX = center.x + offset.x + (internalX * scale)
-                        val screenY = center.y + offset.y + (internalY * scale)
-                        
-                        val dx = screenX - tapOffset.x
-                        val dy = screenY - tapOffset.y
-                        (dx * dx + dy * dy) < (clickTolerance * clickTolerance)
-                     }
-                     
-                     if (clickedDevice != null) {
-                         onDeviceSelected(clickedDevice)
-                     }
-                }
-            }
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val center = center + offset
-            val radius = (min(size.width, size.height) / 2) * scale
+    // MapView State
+    val mapView = remember {
+        MapView(context).apply {
+            setTileSource(TileSourceFactory.MAPNIK)
+            setMultiTouchControls(true)
+            zoomController.setVisibility(org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER)
+            controller.setZoom(19.0)
+            controller.setCenter(userLocation)
+        }
+    }
+
+    // Effect to update Markers when devices change
+    LaunchedEffect(devices) {
+        mapView.overlays.clear()
+        
+        // Add User Marker (Center)
+        val userMarker = Marker(mapView)
+        userMarker.position = userLocation
+        userMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+        userMarker.title = "You are here"
+        // Use default icon or custom
+        mapView.overlays.add(userMarker)
+
+        devices.forEach { device ->
+            // Simulate Geolocation
+            // We have distance and a consistent random angle.
+            // New Point = Origin + Distance * Angle
+            val angleDegrees = abs(device.id.hashCode() % 360).toDouble()
+            val angleRad = Math.toRadians(angleDegrees)
             
-            // Draw grid circles (Scale checks)
-            for (i in 1..4) {
-               drawCircle(
-                    color = gridColor,
-                    radius = radius * (i / 4f),
-                    center = center,
-                    style = Stroke(width = 1.dp.toPx())
-                )
+            val exponent = (-59 - device.rssi) / (10.0 * 2.7)
+            val distMeters = 10.0.pow(exponent)
+            
+            // Simple flat earth approx for small distances is fine
+            // 1 deg Lat ~= 111,111 meters
+            // 1 deg Lon ~= 111,111 * cos(lat) meters
+            val latOffset = (distMeters * cos(angleRad)) / 111111.0
+            val lonOffset = (distMeters * sin(angleRad)) / (111111.0 * cos(Math.toRadians(userLocation.latitude)))
+            
+            val devicePos = GeoPoint(userLocation.latitude + latOffset, userLocation.longitude + lonOffset)
+            
+            val marker = Marker(mapView)
+            marker.position = devicePos
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            marker.title = "${device.name ?: "Unknown"}\n(${device.id})"
+            marker.subDescription = "Signal: ${device.rssi} dBm"
+            
+            // On Click
+            marker.setOnMarkerClickListener { m, _ ->
+                m.showInfoWindow() // Show the title bubble
+                onDeviceSelected(device)
+                true
             }
             
-            // Draw standard crosshairs
-            // We just draw long lines that cover the screen, centered on 'center'
-            val bigSize = max(size.width, size.height) * 2
-            drawLine(
-                color = gridColor,
-                start = Offset(center.x, center.y - bigSize),
-                end = Offset(center.x, center.y + bigSize),
-                strokeWidth = 1.dp.toPx()
-            )
-            drawLine(
-                color = gridColor,
-                start = Offset(center.x - bigSize, center.y),
-                end = Offset(center.x + bigSize, center.y),
-                strokeWidth = 1.dp.toPx()
-            )
+            mapView.overlays.add(marker)
+        }
+        
+        mapView.invalidate() // Redraw
+    }
 
-            // Draw Rotating Sweep (Fixed at center of "radar", so it moves with pan/zoom)
-            // Note: Gradient scaling with zoom is tricky, simpler to just draw circle
-            rotate(rotation, center) {
-                drawCircle(
-                    brush = Brush.sweepGradient(
-                        colors = listOf(Color.Transparent, sweepColor)
-                    ),
-                    radius = radius,
-                    center = center
-                )
-            }
+    AndroidView(
+        factory = { mapView },
+        modifier = modifier.fillMaxSize(),
+        update = { 
+            // Optional: Update center if user moved
+            // it.controller.setCenter(userLocation)
+        }
+    )
+}
 
-            // Draw Devices and Labels
-            devices.forEach { device ->
-                val angleDegrees = abs(device.id.hashCode() % 360).toFloat()
-                val angleRad = Math.toRadians(angleDegrees.toDouble())
-
-                val exponent = (-59 - device.rssi) / (10.0 * 2.7)
-                val dist = 10.0.pow(exponent)
-                val normalizedDist = (dist / maxDistanceMeters).coerceIn(0.0, 1.0).toFloat()
-                
-                // Device Internal Logic
-                val deviceRadius = radius * normalizedDist
-
-                val x = center.x + (deviceRadius * cos(angleRad).toFloat())
-                val y = center.y + (deviceRadius * sin(angleRad).toFloat())
-
-                drawCircle(
-                    color = if (device.source == "WiFi") wifiBlipColor else blipColor,
-                    radius = (6.dp.toPx() * scale).coerceAtMost(30.dp.toPx()).coerceAtLeast(4.dp.toPx()), // Scale blips slightly but clamp
-                    center = Offset(x, y)
-                )
-            }
+// Cleanup lifecycle
+@Composable
+fun DisposableMapView(mapView: MapView) {
+    androidx.compose.runtime.DisposableEffect(mapView) {
+        onDispose {
+            mapView.onDetach()
         }
     }
 }
 
-// Extension to get center of IntSize
-fun androidx.compose.ui.unit.IntSize.center(): androidx.compose.ui.unit.IntOffset {
-    return androidx.compose.ui.unit.IntOffset(width / 2, height / 2)
-}
-fun androidx.compose.ui.unit.IntOffset.toOffset(): Offset {
-    return Offset(x.toFloat(), y.toFloat())
-}
+

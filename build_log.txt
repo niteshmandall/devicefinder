@@ -35,7 +35,10 @@
 > Task :app:writeDebugSigningConfigVersions UP-TO-DATE
 
 > Task :app:compileDebugKotlin FAILED
-e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ui/RadarView.kt:138:32 Unresolved reference 'maxDimension'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ui/RadarView.kt:30:1 This annotation is not repeatable.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ui/RadarView.kt:43:22 Unresolved reference 'preference'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ui/RadarView.kt:139:52 Unresolved reference 'Offset'.
+e: file:///C:/Users/nites/AndroidStudioProjects/devicefinder/app/src/main/java/com/example/devicefinder/ui/RadarView.kt:140:12 Unresolved reference 'Offset'.
 
 FAILURE: Build failed with an exception.
 
@@ -50,5 +53,5 @@ Execution failed for task ':app:compileDebugKotlin'.
 > Run with --scan to get full insights.
 > Get more help at https://help.gradle.org.
 
-BUILD FAILED in 3s
+BUILD FAILED in 4s
 30 actionable tasks: 1 executed, 29 up-to-date
