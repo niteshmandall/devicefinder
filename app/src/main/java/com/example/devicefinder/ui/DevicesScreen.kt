@@ -50,6 +50,8 @@ fun DevicesScreen(
 ) {
     val devices by viewModel.devices.collectAsState()
     var isScanning by remember { mutableStateOf(false) }
+    var useRadarView by remember { mutableStateOf(true) } // Default to Radar
+    var selectedDevice by remember { mutableStateOf<SeenDevice?>(null) }
 
     // Required permissions depending on Android version
     val permissionsToRequest = if (Build.VERSION.SDK_INT >= 31) {
@@ -58,7 +60,7 @@ fun DevicesScreen(
             Manifest.permission.BLUETOOTH_SCAN,
             Manifest.permission.BLUETOOTH_CONNECT,
             Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_WIFI_STATE // Standard for wifi scan
+            Manifest.permission.ACCESS_WIFI_STATE
         )
     } else {
         // Pre-Android 12
@@ -71,14 +73,10 @@ fun DevicesScreen(
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { params ->
-        // Check if all are granted
         val allGranted = params.values.all { it }
         if (allGranted) {
             isScanning = true
             viewModel.startScan()
-        } else {
-             // Handle denied
-             // For simple app, maybe show a toast or text saying "Permissions needed"
         }
     }
 
@@ -87,16 +85,20 @@ fun DevicesScreen(
             TopAppBar(
                 title = { Text("Device Radar") },
                 actions = {
+                    // View Toggle
+                    Button(onClick = { useRadarView = !useRadarView }) {
+                        Text(if (useRadarView) "List View" else "Radar View")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = {
                         if (isScanning) {
                             isScanning = false
                             viewModel.stopScan()
                         } else {
-                            // Request permissions first
                             permissionLauncher.launch(permissionsToRequest.toTypedArray())
                         }
                     }) {
-                        Text(if (isScanning) "Stop" else "Start Scan")
+                        Text(if (isScanning) "Stop" else "Scan")
                     }
                 }
             )
@@ -125,14 +127,67 @@ fun DevicesScreen(
                             CircularProgressIndicator()
                             Text("Scanning...", style = MaterialTheme.typography.bodySmall)
                         } else {
-                            Text("Press 'Start Scan' to begin.", style = MaterialTheme.typography.bodySmall)
+                            Text("Press 'Scan' to begin.", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(devices) { device ->
-                        DeviceItem(device, viewModel)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (useRadarView) {
+                        RadarView(
+                            devices = devices,
+                            onDeviceSelected = { device -> selectedDevice = device },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(devices) { device ->
+                                DeviceItem(device, viewModel)
+                            }
+                        }
+                    }
+
+                    // Device Details Overlay (Map style card at bottom)
+                    if (selectedDevice != null && useRadarView) {
+                        Card(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(16.dp)
+                                .fillMaxWidth(),
+                            elevation = CardDefaults.cardElevation(8.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Selected Device",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = selectedDevice?.name ?: "Unknown Name",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = selectedDevice?.id ?: "",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                                    Text("Signal: ${selectedDevice?.rssi} dBm")
+                                    Text("Distance: ${viewModel.getDistanceString(selectedDevice?.rssi ?: 0)}")
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = { selectedDevice = null },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Close")
+                                }
+                            }
+                        }
                     }
                 }
             }
