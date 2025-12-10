@@ -32,6 +32,7 @@ import kotlin.math.sin
 fun RadarView(
     devices: List<SeenDevice>,
     maxDistanceMeters: Double = 20.0,
+    trackingDevice: SeenDevice? = null,
     onDeviceSelected: (SeenDevice) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -76,21 +77,17 @@ fun RadarView(
         }
     }
 
-    // Effect to update Markers when devices change
-    // We need to redraw markers relative to the CURRENT user location.
-    // If we don't have a fix yet, we might skip or use a default.
-    LaunchedEffect(devices) {
-        // Keep the location overlay, clear others (Markers)
-        // We iterate and remove only Markers to preserve the MyLocation overlay
-        mapView.overlays.removeAll { it is Marker }
+    // Effect to update Markers and Polyline when devices change
+    LaunchedEffect(devices, trackingDevice) {
+        // Keep the location overlay, clear others (Markers, Polylines)
+        mapView.overlays.removeAll { it !is org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay }
         
         val currentUserLoc = locationOverlay.myLocation
         
         if (currentUserLoc != null) {
-            // Ensure map is centered if following is enabled (it should be automatic, but good to ensure)
-            // if (locationOverlay.isFollowLocationEnabled) {
-            //    mapView.controller.animateTo(currentUserLoc)
-            // }
+            
+            // If Tracking, auto-center or bounds (Optional, for now just follow user)
+            // if (trackingDevice != null) locationOverlay.enableFollowLocation() 
 
             devices.forEach { device ->
                 // Simulate Geolocation relative to Real User Location
@@ -105,12 +102,28 @@ fun RadarView(
                 
                 val devicePos = GeoPoint(currentUserLoc.latitude + latOffset, currentUserLoc.longitude + lonOffset)
                 
+                // Draw Tracking Line if this is the tracked device
+                if (trackingDevice?.id == device.id) {
+                    val line = org.osmdroid.views.overlay.Polyline(mapView)
+                    line.setPoints(listOf(currentUserLoc, devicePos))
+                    line.outlinePaint.color = android.graphics.Color.BLUE
+                    line.outlinePaint.strokeWidth = 10f
+                    // line.title = "Distance: ${distMeters.toInt()}m" // Optional
+                    mapView.overlays.add(line)
+                }
+
                 val marker = Marker(mapView)
                 marker.position = devicePos
                 marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                 marker.title = "${device.name ?: "Unknown"}\n(${device.id})"
                 marker.subDescription = "Signal: ${device.rssi} dBm"
                 
+                // Special icon for tracked device?
+                if (trackingDevice?.id == device.id) {
+                   marker.title = "TRACKING: ${marker.title}"
+                   marker.showInfoWindow()
+                }
+
                 marker.setOnMarkerClickListener { m, _ ->
                     m.showInfoWindow()
                     onDeviceSelected(device)

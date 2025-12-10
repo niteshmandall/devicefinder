@@ -52,6 +52,7 @@ fun DevicesScreen(
     var isScanning by remember { mutableStateOf(false) }
     var useRadarView by remember { mutableStateOf(true) } // Default to Radar
     var selectedDevice by remember { mutableStateOf<SeenDevice?>(null) }
+    var trackingDevice by remember { mutableStateOf<SeenDevice?>(null) }
 
     // Required permissions depending on Android version
     val permissionsToRequest = if (Build.VERSION.SDK_INT >= 31) {
@@ -60,13 +61,17 @@ fun DevicesScreen(
             Manifest.permission.BLUETOOTH_SCAN,
             Manifest.permission.BLUETOOTH_CONNECT,
             Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_WIFI_STATE
+            Manifest.permission.ACCESS_WIFI_STATE,
+            Manifest.permission.INTERNET,
+            Manifest.permission.ACCESS_NETWORK_STATE
         )
     } else {
         // Pre-Android 12
         listOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_WIFI_STATE
+            Manifest.permission.ACCESS_WIFI_STATE,
+            Manifest.permission.INTERNET,
+            Manifest.permission.ACCESS_NETWORK_STATE
         )
     }
 
@@ -136,6 +141,7 @@ fun DevicesScreen(
                     if (useRadarView) {
                         RadarView(
                             devices = devices,
+                            trackingDevice = trackingDevice,
                             onDeviceSelected = { device -> selectedDevice = device },
                             modifier = Modifier.fillMaxSize()
                         )
@@ -179,12 +185,26 @@ fun DevicesScreen(
                                     Text("Signal: ${selectedDevice?.rssi} dBm")
                                     Text("Distance: ${viewModel.getDistanceString(selectedDevice?.rssi ?: 0)}")
                                 }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Button(
-                                    onClick = { selectedDevice = null },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("Close")
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                     // Track Button
+                                    Button(
+                                        onClick = { 
+                                            // Toggle tracking
+                                            trackingDevice = if (trackingDevice?.id == selectedDevice?.id) null else selectedDevice 
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(if (trackingDevice?.id == selectedDevice?.id) "Stop Tracking" else "Track Device")
+                                    }
+                                    
+                                    Button(
+                                        onClick = { selectedDevice = null },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("Close")
+                                    }
                                 }
                             }
                         }
